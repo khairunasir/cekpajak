@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV. Tiara Mas - Input Data KTP Customer</title>
+    <!-- Memanggil library OCR gratis (Tesseract.js) -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f6f9; color: #333; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h3 { text-align: center; color: #0056b3; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn { background-color: #0056b3; color: white; padding: 12px; border: none; width: 100%; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .btn:hover { background-color: #004085; }
+        #status { color: blue; font-weight: bold; text-align: center; margin-top: 10px; }
+        .preview-img { width: 100%; max-height: 200px; object-fit: contain; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h3>CV. TIARA MAS YOGYAKARTA<br><span style="font-size: 14px; color: #666;">Pencatatan Data Pajak PPN</span></h3>
+    <hr>
+    
+    <!-- 1. Fitur Ambil Foto KTP -->
+    <div class="form-group">
+        <label>Foto KTP Customer (Gunakan Kamera HP):</label>
+        <input type="file" id="fotoKtp" accept="image/*" capture="environment">
+        <img id="preview" class="preview-img" alt="Pratinjau KTP">
+        <div id="status"></div>
+    </div>
+
+    <!-- 2. Form Hasil Ekstrak (Mencegah Typo) -->
+    <div class="form-group">
+        <label>NIK Hasil Scan (16 Digit):</label>
+        <input type="text" id="nikInput" placeholder="NIK akan terisi otomatis / ketik manual" maxlength="16">
+    </div>
+
+    <div class="form-group">
+        <label>Nama Lengkap Pembeli:</label>
+        <input type="text" id="namaInput" placeholder="Nama sesuai KTP">
+    </div>
+
+    <button type="button" class="btn" onclick="salinKePortal()">Salin Data untuk Portal DJP</button>
+</div>
+
+<script>
+    const fotoKtp = document.getElementById('fotoKtp');
+    const preview = document.getElementById('preview');
+    const statusDiv = document.getElementById('status');
+    const nikInput = document.getElementById('nikInput');
+
+    fotoKtp.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Tampilkan foto di layar
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+        statusDiv.innerText = "Sedang membaca teks KTP (OCR)...";
+
+        // Jalankan proses pembacaan teks otomatis dari gambar KTP
+        Tesseract.recognize(
+            file,
+            'ind', // Menggunakan bahasa Indonesia
+            { logger: m => console.log(m) }
+        ).then(({ data: { text } }) => {
+            statusDiv.innerText = "Proses scan selesai!";
+            
+            // Mencari pola 16 digit angka (NIK) di dalam teks KTP
+            const matches = text.match(/\b\d{16}\b/);
+            if (matches && matches[0]) {
+                nikInput.value = matches[0];
+                alert("NIK Berhasil Ditemukan: " + matches[0]);
+            } else {
+                statusDiv.innerText = "NIK tidak terbaca jelas. Silakan ketik manual atau foto ulang.";
+            }
+        }).catch(err => {
+            console.error(err);
+            statusDiv.innerText = "Gagal memproses gambar.";
+        });
+    });
+
+    function salinKePortal() {
+        const nik = nikInput.value;
+        if (nik.length !== 16) {
+            alert("Peringatan: Pastikan NIK berjumlah 16 digit sebelum divalidasi ke DJP!");
+            return;
+        }
+        // Menyalin NIK ke clipboard komputer/HP agar sales tinggal "Paste" di portal DJP online
+        navigator.clipboard.writeText(nik);
+        alert("NIK " + nik + " berhasil disalin! Buka Portal DJP Online lalu klik kanan -> Paste.");
+    }
+</script>
+
+</body>
+</html>
